@@ -21,6 +21,7 @@ library(lubridate)
 library(scales)
 library(gt)
 library(sf)
+library(fs)
 set.seed(metadatar$seed_set[1])
 options(digits = 4, max.print = 99, warnPartialMatchDollar = TRUE, 
         tibble.print_max = 30, scipen = 999, nwarnings = 5)
@@ -94,7 +95,7 @@ cash_money <- function(x) {
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # which storm do you want to pull data for? type here
-storm_designation <- "al182021"
+# storm_designation <- "al152021"
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # this is the nhs url where these zip files can be grabbed
@@ -130,5 +131,112 @@ pwalk(list(arg1 = data_packs$dataset_urls,
            arg2 = data_packs$zip_paths, 
            arg3 = data_packs$unzip_paths), 
       fun_consume)
+
+# cleanup ??????????????????????????????????????
+rm(nhc_gis_site, fun_consume)
+ls()
+trash()
+mem_used()
+
+# ^ -----
+
+# pick out the shape files and prep them for analysis ------------------
+
+# read in the best track trajectory shape file :::::::::::::::::::::::::::
+interim <- data.frame(filenames = list.files(data_packs[1, 5])) %>% 
+  mutate(is_dotshp = ifelse(str_ends(filenames, ".shp") == TRUE, 
+                            TRUE, FALSE)) %>% 
+  filter(is_dotshp == TRUE) %>% select(-is_dotshp)
+
+dfsf_5day_lin <- st_read(dsn = paste0(data_packs[1, 5], 
+                                      "/", interim[1, 1]))
+
+# now read in the forecast shape files :::::::::::::::::::::::::::::::::::
+interim <- data.frame(filenames = list.files(data_packs[2, 5])) %>% 
+  mutate(is_dotshp = ifelse(str_ends(filenames, ".shp") == TRUE, 
+                            TRUE, FALSE)) %>% 
+  filter(is_dotshp == TRUE) %>% select(-is_dotshp)
+
+dfsf_fcast_radi <- st_read(dsn = paste0(data_packs[2, 5], 
+                                      "/", interim[1, 1]))
+dfsf_init_radi <- st_read(dsn = paste0(data_packs[2, 5], 
+                                        "/", interim[2, 1]))
+
+# now read in the best track shape files ::::::::::::::::::::::::::::::::::
+interim <- data.frame(filenames = list.files(data_packs[3, 5])) %>% 
+  mutate(is_dotshp = ifelse(str_ends(filenames, ".shp") == TRUE, 
+                            TRUE, FALSE)) %>% 
+  filter(is_dotshp == TRUE) %>% select(-is_dotshp)
+
+dfsf_bt_lin <- st_read(dsn = paste0(data_packs[3, 5], 
+                                    "/", interim[1, 1]))
+dfsf_bt_radi <- st_read(dsn = paste0(data_packs[3, 5], 
+                                     "/", interim[3, 1]))
+dfsf_bt_wsaw <- st_read(dsn = paste0(data_packs[3, 5], 
+                                     "/", interim[4, 1]))
+
+# cleanup ???????????????????????????????????????
+rm(interim)
+ls()
+trash()
+mem_used()
+
+# ^ -----
+
+# viz tests -----------------------------------------------------
+
+# run a quick ggplot to see if all the shape files came in and worked
+# ggplot() +
+#   geom_sf(data = dfsf_init_radi, fill = 'black', alpha = 0.8) +
+#   geom_sf(data = dfsf_fcast_radi, aes(fill = VALIDTIME, alpha = RADII)) +
+#   geom_sf(data = dfsf_bt_wsaw, alpha = 0.25) +
+#   geom_sf(data = dfsf_bt_radi, alpha = 0.25) +
+#   geom_sf(data = dfsf_5day_lin, size = 1, linetype = 2, color = "red") +
+#   geom_sf(data = dfsf_bt_lin, size = 1) +
+#   theme_minimal()
+
+# ^ -----
+
+# delete all those raw file downloads ----------------------------- 
+
+walk(data_packs$unzip_paths, dir_delete)
+walk(data_packs$zip_paths, file_delete)
+
+# cleanup ??????????????????????????
+trash()
+ls()
+mem_used()
+
+# ^ -----
+
+# write final shape files to clean location for further analysis ---------
+
+# if sourcing this entire etl script, you dont have to write these out, 
+#   but in the future it might be nice to have the snapshots saved somewhere
+# write_sf(dfsf_5day_lin, paste0(getwd(), "/etl/ingot/", 
+#                                "dfsf_5day_lin", ".shp"))
+# write_sf(dfsf_bt_lin, paste0(getwd(), "/etl/ingot/", 
+#                              "dfsf_bt_lin", ".shp"))
+# write_sf(dfsf_bt_radi, paste0(getwd(), "/etl/ingot/", 
+#                               "dfsf_bt_radi", ".shp"))
+# write_sf(dfsf_bt_wsaw, paste0(getwd(), "/etl/ingot/", 
+#                               "dfsf_bt_wsaw", ".shp"))
+# write_sf(dfsf_fcast_radi, paste0(getwd(), "/etl/ingot/", 
+#                                  "dfsf_fcast_radi", ".shp"))
+# write_sf(dfsf_init_radi, paste0(getwd(), "/etl/ingot/", 
+#                                 "dfsf_init_radi", ".shp"))
+
+# the below programatic method did not work correctly, unfortunately ......
+# interim <- data.frame(env_objects = ls()) %>% 
+#   mutate(df_to_write = ifelse(str_starts(env_objects, "dfsf_") == TRUE, 
+#                               TRUE, FALSE)) %>% 
+#   filter(df_to_write == TRUE) %>% select(env_objects) %>% 
+#   mutate(write_paths = paste0(getwd(), "/etl/ingot/", 
+#                               env_objects, ".shp"))
+# 
+# fun_writer <- function(arg1, arg2) {
+#   write_sf(obj = quote(arg1), dsn = arg2)}
+# 
+# pwalk(list(interim$env_objects, interim$write_paths), fun_writer)
 
 # ^ -----
