@@ -261,41 +261,69 @@ mem_used()
 
 # clean up and meta analyze the shape files -----------------------------
 
+# create a meta df that combines intel from each type of shape file
+df_storms <- data.frame(storm_id = unique(dfsf_lin$storm_id))
 
+df_storms <- df_storms %>% as_tibble() %>% 
+  mutate(storm_year = str_sub(storm_id, start = 5), 
+         storm_yr_num = str_sub(storm_id, start = 3, end = 4), 
+         storm_year = as.double(storm_year), 
+         storm_yr_num = as.double(storm_yr_num), 
+         etl_df_creation = Sys.time())
 
+# pull if storm was a hurricane and the category of the hurricane
+interim <- dfsf_lin %>% as_tibble() %>% select(-geometry) %>% 
+  rename(hur_severity = SS) %>% group_by(storm_id) %>% 
+  summarise(max_hur_sev = max(hur_severity)) %>% 
+  mutate(hur_ind = ifelse(max_hur_sev > 0, TRUE, FALSE))
 
+df_storms <- left_join(df_storms, interim, by = "storm_id")
+rm(interim)
 
+# extract storm insights from the points shape file
+interim <- dfsf_pts %>% as_tibble() %>% select(-geometry) %>% 
+  group_by(storm_id) %>% 
+  summarise(min_time = min(DTG), 
+            max_time = max(DTG), 
+            max_intensity = max(INTENSITY))
+
+df_storms <- left_join(df_storms, interim, by = "storm_id")
+rm(interim)
+
+# trying to clean up and get the real storm name but will revisit this !!!
+# dfsf_pts %>% as_tibble() %>% select(-geometry) %>% 
+#   mutate(delete_me = ifelse(STORMNAME %in% c('INVEST', 'TEST', 
+#                                              'ONE', 'TWO', 'THREE', 
+#                                              'FOUR'), 
+#                             TRUE, FALSE)) %>% 
+#   mutate(delete_me = ifelse(str_detect(STORMNAME, 'GENESIS') == TRUE, 
+#                             TRUE, delete_me)) %>% 
+#   mutate(delete_me = ifelse(is.na(STORMNAME), TRUE, delete_me)) %>% 
+#   filter(delete_me == FALSE) %>% 
+#   group_by(storm_id, STORMNAME, delete_me) %>% 
+#   summarise(storm_name = min(STORMNAME), 
+#             min_time = min(DTG), 
+#             max_time = max(DTG), 
+#             max_intensity = max(INTENSITY)) 
+
+# cleanups on the shape file dataframes :::::::::::::::::::::::::::::::
+dfsf_lin <- dfsf_lin %>% rename(hur_severity = SS)
+
+# cleanup ?????????????????????????????????????????????????????????
+ls()
+trash()
+mem_used()
 
 # ^ -----
 
 # write final shape files to clean location for further analysis ---------
 
-# if sourcing this entire etl script, you dont have to write these out, 
-#   but in the future it might be nice to have the snapshots saved somewhere
-# write_sf(dfsf_5day_lin, paste0(getwd(), "/etl/ingot/", 
-#                                "dfsf_5day_lin", ".shp"))
-# write_sf(dfsf_bt_lin, paste0(getwd(), "/etl/ingot/", 
-#                              "dfsf_bt_lin", ".shp"))
-# write_sf(dfsf_bt_radi, paste0(getwd(), "/etl/ingot/", 
-#                               "dfsf_bt_radi", ".shp"))
-# write_sf(dfsf_bt_wsaw, paste0(getwd(), "/etl/ingot/", 
-#                               "dfsf_bt_wsaw", ".shp"))
-# write_sf(dfsf_fcast_radi, paste0(getwd(), "/etl/ingot/", 
-#                                  "dfsf_fcast_radi", ".shp"))
-# write_sf(dfsf_init_radi, paste0(getwd(), "/etl/ingot/", 
-#                                 "dfsf_init_radi", ".shp"))
-
-# the below programatic method did not work correctly, unfortunately ......
-# interim <- data.frame(env_objects = ls()) %>% 
-#   mutate(df_to_write = ifelse(str_starts(env_objects, "dfsf_") == TRUE, 
-#                               TRUE, FALSE)) %>% 
-#   filter(df_to_write == TRUE) %>% select(env_objects) %>% 
-#   mutate(write_paths = paste0(getwd(), "/etl/ingot/", 
-#                               env_objects, ".shp"))
-# 
-# fun_writer <- function(arg1, arg2) {
-#   write_sf(obj = quote(arg1), dsn = arg2)}
-# 
-# pwalk(list(interim$env_objects, interim$write_paths), fun_writer)
+# note: getting some errors when writing the shape files, look into this 
+#   futher, opened issue #3 to address this
+write_sf(dfsf_lin, paste0(getwd(), "/etl/ingot/", "dfsf_lin", ".shp"))
+write_sf(dfsf_pts, paste0(getwd(), "/etl/ingot/", "dfsf_pts", ".shp"))
+write_sf(dfsf_radi, paste0(getwd(), "/etl/ingot/", "dfsf_radi", ".shp"))
+write_sf(dfsf_wind, paste0(getwd(), "/etl/ingot/", "dfsf_wind", ".shp"))
+write_rds(df_storms, paste0(getwd(), "/etl/ingot/", "df_storms", ".rds"))
 
 # ^ -----
