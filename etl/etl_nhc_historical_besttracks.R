@@ -93,7 +93,7 @@ cash_money <- function(x) {
 
 # pull in basic shp files from nhc ------------------------------------------
 
-# this is the nhs url where these zip files can be grabbed
+# this is the nhc url where these zip files can be grabbed
 nhc_gis_site <- "https://www.nhc.noaa.gov/gis/best_track/"
 
 # create a function that can generate a vector of storm codes for nhc
@@ -106,6 +106,9 @@ gen_storm_codes <- function(yr, n_storms) {
   return(return_me)}
 
 # initialize a df object that can be used to generate URLS to pull data
+#   look at the url above and add args here to pull in more years
+#   you can count the number of storms for each year to generate the
+#   right vector of storm IDs
 data_packs <- data.frame(datasets = c(gen_storm_codes(2015, 12), 
                                       gen_storm_codes(2016, 16),
                                       gen_storm_codes(2017, 19),
@@ -145,14 +148,18 @@ mem_used()
 
 # pick out the shape files and prep them for analysis ------------------
 
-data_packs <- data_packs %>% 
-  rename(storm_id = datasets)
+# rename so that we can join this file path and directory df to other stuff
+data_packs <- data_packs %>% rename(storm_id = datasets)
 
-# find all the different shape files in all the unzips ::::::::::::::::::::::
+# find all the different shape files in all the unzips :::::::::::::::::::::
 interim <- data.frame(filenames = list.files(data_packs$unzip_paths)) %>% 
+  # this block only gives us the .shp files, which we want to read
   mutate(is_dotshp = ifelse(str_ends(filenames, ".shp") == TRUE, 
                             TRUE, FALSE)) %>% 
   filter(is_dotshp == TRUE) %>% select(-is_dotshp) %>% 
+  # parse the filenames to help with functions later
+  #   there are 4 types of shp files in the zip folders = line, point, 
+  #     polygon (radius), and windswath, with different schemas
   mutate(setup_var = str_length(filenames), 
          shape_type = str_sub(filenames, 
                               start = 1, 
@@ -161,7 +168,6 @@ interim <- data.frame(filenames = list.files(data_packs$unzip_paths)) %>%
          storm_id = str_sub(filenames, start = 1, 8), 
          storm_id = tolower(storm_id)) %>% 
   select(-setup_var)
-# head(interim, 30)
 
 # join the data_packs df object to the interim so that we have a robust list
 #   of all the files we want to read in and where they are in the 
@@ -173,7 +179,6 @@ interim <- interim %>%
   mutate(st_read_path = paste0(unzip_paths, "/", filenames))
 
 # build a reader that will read in and combine the shape files
-
 fun_shp_consumer <- function(path_arg, strmid_arg) {
   aa <- st_read(dsn = path_arg)
   aa <- aa %>% mutate(storm_id = as.character(strmid_arg))}
@@ -182,6 +187,7 @@ fun_shp_consumer <- function(path_arg, strmid_arg) {
 # fun_shp_consumer(interim$st_read_path[4],
 #                  interim$storm_id[4]) %>% 
 #   ggplot() + geom_sf(aes(color = as.factor(RADII)))
+# tests +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # consume and combine the line shape files ::::::::::::::::::::::::::::::::
 interim2 <- interim %>% filter(shape_type == "lin")
@@ -250,6 +256,15 @@ walk(data_packs$zip_paths, file_delete)
 trash()
 ls()
 mem_used()
+
+# ^ -----
+
+# clean up and meta analyze the shape files -----------------------------
+
+
+
+
+
 
 # ^ -----
 
