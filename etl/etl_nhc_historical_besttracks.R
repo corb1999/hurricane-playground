@@ -114,7 +114,8 @@ data_packs <- data.frame(datasets = c(gen_storm_codes(2015, 12),
                                       gen_storm_codes(2017, 19),
                                       gen_storm_codes(2018, 16),
                                       gen_storm_codes(2019, 19),
-                                      gen_storm_codes(2020, 31)))
+                                      gen_storm_codes(2020, 31), 
+                                      gen_storm_codes(2021, 2)))
 nrow(data_packs)
 
 # builds a dataframe with all needed file names to download and unzip
@@ -320,10 +321,14 @@ mem_used()
 
 # note: getting some errors when writing the shape files, look into this 
 #   futher, opened issue #3 to address this
-write_sf(dfsf_lin, paste0(getwd(), "/etl/ingot/", "dfsf_lin", ".shp"))
-write_sf(dfsf_pts, paste0(getwd(), "/etl/ingot/", "dfsf_pts", ".shp"))
-write_sf(dfsf_radi, paste0(getwd(), "/etl/ingot/", "dfsf_radi", ".shp"))
-write_sf(dfsf_wind, paste0(getwd(), "/etl/ingot/", "dfsf_wind", ".shp"))
+write_sf(dfsf_lin, paste0(getwd(), "/etl/ingot/", "dfsf_lin/", 
+                          "dfsf_lin", ".shp"))
+write_sf(dfsf_pts, paste0(getwd(), "/etl/ingot/", "dfsf_pts/", 
+                          "dfsf_pts", ".shp"))
+write_sf(dfsf_radi, paste0(getwd(), "/etl/ingot/", "dfsf_radi/", 
+                           "dfsf_radi", ".shp"))
+write_sf(dfsf_wind, paste0(getwd(), "/etl/ingot/", "dfsf_wind/", 
+                           "dfsf_wind", ".shp"))
 write_rds(df_storms, paste0(getwd(), "/etl/ingot/", "df_storms", ".rds"))
 
 # ^ -----
