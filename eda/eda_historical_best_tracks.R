@@ -105,7 +105,18 @@ clockout()
 dim(raw_df)
 colnames(raw_df)
 
-df_storms <- raw_df
+fun_fix_time <- function(xx) {
+  aa <- str_sub(xx, 1, 4)
+  bb <- str_sub(xx, 5, 6)
+  cc <- str_sub(xx, 7, 8)
+  dd <- paste(aa, bb, cc, sep = '-')
+  ee <- ymd(dd)
+  return_me <- ee
+  return(return_me)}
+
+df_storms <- raw_df %>% 
+  mutate(storm_dt_start = fun_fix_time(min_time), 
+         storm_dt_end = fun_fix_time(max_time))
 
 # load the best tracks shape file
 loader_path1 <- paste0(getwd(), "/etl/ingot/dfsf_lin")
@@ -132,7 +143,7 @@ dfsf_state <- dfsf_state %>%
                        "NY", "CT", "RI", "MA", "PA", "ME"))
 
 # cleanup !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-rm(raw_df, loader_path1)
+rm(raw_df, loader_path1, fun_fix_time)
 ls()
 trash()
 mem_used()
@@ -141,10 +152,13 @@ mem_used()
 
 # plot settings -------------------------------------------------------
 
+plt_df_storms <- df_storms %>% 
+  # filter(storm_year > 2017) %>% 
+  filter(storm_yr_num > 0)
+
 plt_dfsf_state <- dfsf_state %>% 
   # filter(STUSPS %in% c('NC', 'SC')) %>% 
   filter(REGION > 0)
-
 
 plt_dfsf_lin <- dfsf_lin %>% 
   # filter(hur_ind == TRUE) %>% 
@@ -170,6 +184,38 @@ ggplot() +
   facet_wrap(vars(storm_year)) + 
   theme_minimal() + theme(legend.position = 'top') + 
   # lims(x = c(-85, -65), y = c(30, 40)) +
+  labs(color = 'HUR Category')
+
+# ^ -----
+
+# visualize the storms dataframe, no maps ------------------------------
+
+plt_df_storms %>% 
+  ggplot() + 
+  geom_point(aes(x = storm_dt_start, y = storm_yr_num, 
+                 color = as.factor(max_hur_sev))) + 
+  geom_segment(aes(x = storm_dt_start, xend = storm_dt_end, 
+                   y = storm_yr_num, yend = storm_yr_num, 
+                   color = as.factor(max_hur_sev)), 
+               size = 4.5) + 
+  scale_color_manual(values = c('grey', '#FBD148', 
+                                '#F9975D', 'orange', 
+                                '#C85C5C', 'red')) + 
+  theme_minimal() + theme(legend.position = 'top') + 
+  labs(color = 'HUR Category')
+
+plt_df_storms %>% 
+  ggplot() + 
+  geom_point(aes(x = storm_dt_start, y = max_intensity, 
+                 color = as.factor(max_hur_sev))) + 
+  geom_segment(aes(x = storm_dt_start, xend = storm_dt_end, 
+                   y = max_intensity, yend = max_intensity, 
+                   color = as.factor(max_hur_sev)), 
+               size = 4.5, alpha = 0.85) + 
+  scale_color_manual(values = c('grey', '#FBD148', 
+                                '#F9975D', 'orange', 
+                                '#C85C5C', 'red')) + 
+  theme_minimal() + theme(legend.position = 'none') + 
   labs(color = 'HUR Category')
 
 # ^ -----
