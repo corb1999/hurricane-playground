@@ -109,7 +109,7 @@ file_cabinet <- function(search_path = getwd()) {
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # which storm do you want to pull data for? type here
-storm_designation <- "al062022"
+# storm_designation <- "al062022"
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # this is the nhs url where these zip files can be grabbed

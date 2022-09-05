@@ -87,13 +87,24 @@ cash_money <- function(x) {
   # cc <- ifelse(is.na(cc), 0, cc)
   return(cc)}
 
+qp <- function(pltname, pltpath_suffix = NA, plt_inch = 5) {
+  plt_timestamp <- paste(year(Sys.time()), month(Sys.time()),  
+                         day(Sys.time()), hour(Sys.time()), minute(Sys.time()), 
+                         floor(second(Sys.time())), sep = "-")
+  aa <- ifelse(is.na(pltpath_suffix), "", pltpath_suffix)
+  plt_filepath <- paste0(getwd(), aa)
+  plt_name <- paste0("plt_", pltname, "_", plt_timestamp, ".png")
+  ggsave(filename = plt_name, plot = last_plot(), 
+         path = plt_filepath, scale = 1, device = "png", 
+         height = plt_inch, width = plt_inch * 1.61803399, units = "in")}
+
 # ^ ====================================
 # :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 # run etl and source hurrican data -----------------------------------
 
 # Manually type in the storm ID you want to observe and analyze
-storm_designation <- "al182021"
+storm_designation <- "al062022"
 
 # run the etl to pull the data, source relevant files
 sourcerpath <- paste0(getwd(), '/etl/etl_nhc_gis.R')
@@ -129,17 +140,33 @@ dfsf_state <- dfsf_state %>%
 (advisory_text <- paste0(dfsf_5day_lin$STORMTYPE, " ", 
                          dfsf_5day_lin$STORMNAME, " as of UTC ", 
                          max(dfsf_bt_radi$SYNOPTIME)))
+advisory_text2 <- paste0(dfsf_5day_lin$STORMTYPE, "_", 
+                         dfsf_5day_lin$STORMNAME, "_as_of_UTC_", 
+                         max(dfsf_bt_radi$SYNOPTIME))
 
-ggplot() + 
-  geom_sf(data = dfsf_state, fill = NA, size = 0.7, color = "black") + 
+p1 <- ggplot() + 
+  geom_sf(data = dfsf_state, fill = NA, size = 0.7, color = "black") +
   geom_sf(data = dfsf_init_radi, fill = 'black', alpha = 0.8) +
   geom_sf(data = dfsf_fcast_radi, aes(fill = VALIDTIME, alpha = RADII)) +
   geom_sf(data = dfsf_bt_wsaw, alpha = 0.25) +
   geom_sf(data = dfsf_bt_radi, alpha = 0.25) +
   geom_sf(data = dfsf_5day_lin, size = 1, linetype = 2, color = "red") +
-  geom_sf(data = dfsf_bt_lin, size = 1) + 
+  geom_sf(data = dfsf_bt_lin, size = 1) +
   guides(alpha = 'none') + 
-  theme_minimal() + theme(legend.position = "none") + 
+  theme_minimal() + 
+  theme(legend.position = "none", 
+        plot.background = element_rect(fill = 'white', 
+                                       color = 'white'), 
+        panel.border = element_blank()) + 
   labs(title = advisory_text)
+
+clockin()
+p1
+clockout()
+
+clockin()
+qp(pltname = advisory_text2, pltpath_suffix = '/printer_tray', 
+   plt_inch = 7)
+clockout()
 
 # ^ -----
