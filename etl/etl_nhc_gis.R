@@ -88,6 +88,20 @@ cash_money <- function(x) {
   # cc <- ifelse(is.na(cc), 0, cc)
   return(cc)}
 
+file_cabinet <- function(search_path = getwd()) {
+  aa <- data.frame(search_path = search_path, 
+                   dir_object = list.files(path = search_path, 
+                                           all.files = TRUE))
+  bb <- aa %>% 
+    mutate(object_suffix = str_extract(dir_object, 
+                                       "\\.[:alpha:]*$"), 
+           dir_isend = ifelse(is.na(object_suffix), 
+                              FALSE, TRUE), 
+           dir_path = ifelse(dir_isend == FALSE, 
+                             paste0(search_path, '/', dir_object), 
+                             NA))
+  return(bb)}
+
 # ^ ====================================
 # :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -95,7 +109,7 @@ cash_money <- function(x) {
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # which storm do you want to pull data for? type here
-# storm_designation <- "al152021"
+# storm_designation <- "al062022"
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # this is the nhs url where these zip files can be grabbed
@@ -127,10 +141,14 @@ fun_consume <- function(arg1, arg2, arg3) {
   unzip(zipfile = arg2, exdir = arg3)}
 
 # performs download from the site and unzips the data
+clockin()
 pwalk(list(arg1 = data_packs$dataset_urls, 
            arg2 = data_packs$zip_paths, 
            arg3 = data_packs$unzip_paths), 
       fun_consume)
+clockout()
+
+file_cabinet(paste0(getwd(), '/etl/ore'))
 
 # cleanup ??????????????????????????????????????
 rm(nhc_gis_site, fun_consume)
@@ -150,6 +168,7 @@ interim <- data.frame(filenames = list.files(data_packs[1, 5])) %>%
 
 dfsf_5day_lin <- st_read(dsn = paste0(data_packs[1, 5], 
                                       "/", interim[1, 1]))
+dfsf_5day_lin
 
 # now read in the forecast shape files :::::::::::::::::::::::::::::::::::
 interim <- data.frame(filenames = list.files(data_packs[2, 5])) %>% 
@@ -161,6 +180,9 @@ dfsf_fcast_radi <- st_read(dsn = paste0(data_packs[2, 5],
                                       "/", interim[1, 1]))
 dfsf_init_radi <- st_read(dsn = paste0(data_packs[2, 5], 
                                         "/", interim[2, 1]))
+
+dfsf_fcast_radi
+dfsf_init_radi
 
 # now read in the best track shape files ::::::::::::::::::::::::::::::::::
 interim <- data.frame(filenames = list.files(data_packs[3, 5])) %>% 
@@ -199,8 +221,10 @@ mem_used()
 
 # delete all those raw file downloads ----------------------------- 
 
+file_cabinet(paste0(getwd(), '/etl/ore'))
 walk(data_packs$unzip_paths, dir_delete)
 walk(data_packs$zip_paths, file_delete)
+file_cabinet(paste0(getwd(), '/etl/ore'))
 
 # cleanup ??????????????????????????
 trash()
@@ -213,18 +237,21 @@ mem_used()
 
 # if sourcing this entire etl script, you dont have to write these out, 
 #   but in the future it might be nice to have the snapshots saved somewhere
-# write_sf(dfsf_5day_lin, paste0(getwd(), "/etl/ingot/", 
+# clockin()
+# write_sf(dfsf_5day_lin, paste0(getwd(), "/etl/ingot/",
 #                                "dfsf_5day_lin", ".shp"))
-# write_sf(dfsf_bt_lin, paste0(getwd(), "/etl/ingot/", 
+# write_sf(dfsf_bt_lin, paste0(getwd(), "/etl/ingot/",
 #                              "dfsf_bt_lin", ".shp"))
-# write_sf(dfsf_bt_radi, paste0(getwd(), "/etl/ingot/", 
+# write_sf(dfsf_bt_radi, paste0(getwd(), "/etl/ingot/",
 #                               "dfsf_bt_radi", ".shp"))
-# write_sf(dfsf_bt_wsaw, paste0(getwd(), "/etl/ingot/", 
+# write_sf(dfsf_bt_wsaw, paste0(getwd(), "/etl/ingot/",
 #                               "dfsf_bt_wsaw", ".shp"))
-# write_sf(dfsf_fcast_radi, paste0(getwd(), "/etl/ingot/", 
+# write_sf(dfsf_fcast_radi, paste0(getwd(), "/etl/ingot/",
 #                                  "dfsf_fcast_radi", ".shp"))
-# write_sf(dfsf_init_radi, paste0(getwd(), "/etl/ingot/", 
+# write_sf(dfsf_init_radi, paste0(getwd(), "/etl/ingot/",
 #                                 "dfsf_init_radi", ".shp"))
+# clockout()
+
 
 # the below programatic method did not work correctly, unfortunately ......
 # interim <- data.frame(env_objects = ls()) %>% 
